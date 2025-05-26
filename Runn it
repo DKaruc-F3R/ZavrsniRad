@@ -1,0 +1,5 @@
+cargo build
+cargo espflash flash --target xtensa-esp32-espidf --monitor
+ & "$env:USERPROFILE\export-esp.ps1"
+
+ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
