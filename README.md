@@ -11,7 +11,11 @@ Unutar esp32 technical reference manual (ESP TRM) nalazi se detaljan opis svih r
 ![image](https://github.com/user-attachments/assets/e09e15c1-c3e5-434b-96f2-8b4db16d636d)
 
 
-Funkcionalnost se trenutno prikazuje samo preko UART protokola. 
+U datoteci lib.rs definirana je generička struktura Pin<MODE> parametrizirana marker tipovima Input i Output, koja pomoću PhantomData nosi informaciju o načinu rada pina. U new konstruktorima se pozivaju metode config_input i config_output koje u unsafe blokovima čitaju i upisuju odgovarajuće registre iz modula gpio_mux i io_mux kako bi pin konfigurirali kao ulaz ili izlaz te onemogućili ili omogućili interne pull-up/down otpornike. Nakon inicijalizacije, za izlazne pinove možete pozivati set_high() / set_low(), a za ulazne is_high() / is_low(), 
+Primjerice let mut led = Pin::<Output>::new(2); led.set_high();
+let button = Pin::<Input>::new(4); if button.is_high() { … }
+
+Funkcionalnost se trenutno prikazuje samo preko UART protokola, te preko par LED diodi.
 
 
 Izvori:
