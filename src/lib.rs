@@ -1,8 +1,13 @@
 #![no_std]
 #![allow(dead_code)]
+#![feature(asm_experimental_arch)]
 
 pub mod gpio_mux;
 pub mod io_mux;
+pub mod periph;
+pub mod protocols;
+
+
 
 use core::marker::PhantomData;
 use core::ptr::{read_volatile, write_volatile};
@@ -15,15 +20,8 @@ pub enum Pull {
     Up,
     Down,
 }
-    
-pub enum Protocols {
-    SPI,
-    UART,
-    I2C,
-    PWM,
-}
 
-struct Pin<MODE> {
+pub struct Pin<MODE> {
     pin: u8,
     _mode: PhantomData<MODE>,
 }
@@ -60,12 +58,14 @@ impl Pin<Input> {
         }
     }
 
-    pub fn into_output(self) -> Pin<Output>{
-        let out = Pin {pin: self.pin, _mode: PhantomData};
+    pub fn into_output(self) -> Pin<Output> {
+        let out = Pin {
+            pin: self.pin,
+            _mode: PhantomData,
+        };
         out.config_output();
         out
     }
-
 }
 
 impl Pin<Output> {
@@ -120,12 +120,14 @@ impl Pin<Output> {
         }
     }
 
-     pub fn into_input(self) -> Pin<Input>{
-        let inp = Pin {pin: self.pin, _mode: PhantomData};
+    pub fn into_input(self) -> Pin<Input> {
+        let inp = Pin {
+            pin: self.pin,
+            _mode: PhantomData,
+        };
         inp.config_input();
         inp
     }
-
 }
 
 impl<MODE> Pin<MODE> {
@@ -152,4 +154,9 @@ impl<MODE> Pin<MODE> {
             }
         }
     }
+
+    pub fn get_pin(&self) -> u8{
+        self.pin
+    }
+
 }
