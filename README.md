@@ -1,9 +1,25 @@
 Primjena programskog jezika Rust za razvoj ugradbenih sustava
 
+Omoguceni svi GPIO driveri, za Input ili Output. 
+Glavna logika se nalazi u lib.rs, dok se u main.rs nalazi demonstracija funkcionalnost.
+Unutar periph.rs nalazi se integracija gpioa korsiteći periferne module, tj. ne direktnom registar manipulacijom kao što je definirano u lib.rs.
+
+Unutar esp32 technical reference manual (ESP TRM) nalazi se detaljan opis svih registara, te opis funkcionalnosti GPIO i IO muxa
+ 
+![image](https://github.com/user-attachments/assets/22519869-ac1e-4c0a-aa27-bb42a25ad9cf)
+
+![image](https://github.com/user-attachments/assets/e09e15c1-c3e5-434b-96f2-8b4db16d636d)
+
+
+Funkcionalnost se trenutno prikazuje samo preko UART protokola. 
+
 
 Izvori:
 
-[https://github.com/esp-rs/esp-template
+Template za setup ovog projekta je:
+https://github.com/esp-rs/esp-template
+
+
 
 https://github.com/esp-rs
 
