@@ -100,3 +100,5 @@ https://github.com/espressif/esp-idf/tree/v5.4.1/components/driver
 https://github.com/esp-rs/no_std-training
 
 https://www.ti.com/lit/an/slva704/slva704.pdf?ts=1749492423884&ref_url=https%253A%252F%252Fwww.google.com%252F)
+https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf
+https://cdn-reichelt.de/documents/datenblatt/A300/SBC-NODEMCU-ESP32-DATASHEET_V1.2.pdf
