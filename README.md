@@ -102,3 +102,52 @@ https://github.com/esp-rs/no_std-training
 https://www.ti.com/lit/an/slva704/slva704.pdf?ts=1749492423884&ref_url=https%253A%252F%252Fwww.google.com%252F)
 https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf
 https://cdn-reichelt.de/documents/datenblatt/A300/SBC-NODEMCU-ESP32-DATASHEET_V1.2.pdf
+
+
+classDiagram
+  class Pin~MODE~ {
+    - pin: u8
+    - _mode: PhantomData<MODE>
+    + set_pull(pull: Pull) void
+    + is_high() bool
+    + get_pin() u8
+  }
+
+  class "Pin<Input>" as PinInput {
+    + new(pin: u8) Pin<Input>
+    + into_output(self) Pin<Output>
+    - config_input() void
+  }
+
+  class "Pin<Output>" as PinOutput {
+    + new(pin: u8) Pin<Output>
+    + set_high() void
+    + set_low() void
+    + into_input(self) Pin<Input>
+    - config_output() void
+  }
+
+  class Input <<marker>>
+  class Output <<marker>>
+
+  class Pull <<enum>> {
+    None
+    Up
+    Down
+  }
+
+  %% specijalizacije (template binding)
+  PinInput ..|> Pin~MODE~ : specializes
+  PinOutput ..|> Pin~MODE~ : specializes
+
+  %% odnosi
+  Pin~MODE~ --> Pull : uses
+  Pin~MODE~ --> Input : PhantomData
+  Pin~MODE~ --> Output : PhantomData
+
+  %% (opcionalno) moduli/ovisnosti nad registrima
+  class gpio_mux <<module>>
+  class io_mux <<module>>
+  Pin~MODE~ ..> gpio_mux : read/write regs
+  Pin~MODE~ ..> io_mux : IO MUX config
+
