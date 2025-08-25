@@ -8,7 +8,6 @@ pub mod periph;
 pub mod protocols;
 
 
-
 use core::marker::PhantomData;
 use core::ptr::{read_volatile, write_volatile};
 
