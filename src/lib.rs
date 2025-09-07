@@ -7,7 +7,6 @@ pub mod io_mux;
 pub mod periph;
 pub mod protocols;
 
-
 use core::marker::PhantomData;
 use core::ptr::{read_volatile, write_volatile};
 
@@ -37,22 +36,22 @@ impl Pin<Input> {
     }
 
     fn config_input(&self) {
+        if self.pin < 32 {
+            unsafe { write_volatile(gpio_mux::GPIO_ENABLE_W1TC, 1 << self.pin) };
+        } else {
+            unsafe { write_volatile(gpio_mux::GPIO_ENABLE1_W1TC, 1 << (self.pin - 32)) };
+        }
+
+        let io_pin = io_mux::io_mux_reg(self.pin);
+        let mut val = unsafe { read_volatile(io_pin) };
+
+        val = (val & !0b111) | io_mux::MCU_SEL_GPIO;
+
+        val |= io_mux::FUN_IE;
+
+        val &= !(io_mux::FUN_WPU | io_mux::FUN_WPD);
+
         unsafe {
-            if self.pin < 32 {
-                write_volatile(gpio_mux::GPIO_ENABLE_W1TC, 1 << self.pin);
-            } else {
-                write_volatile(gpio_mux::GPIO_ENABLE1_W1TC, 1 << (self.pin - 32));
-            }
-
-            let io_pin = io_mux::io_mux_reg(self.pin);
-            let mut val = read_volatile(io_pin);
-
-            val = (val & !0b111) | io_mux::MCU_SEL_GPIO;
-
-            val |= io_mux::FUN_IE;
-
-            val &= !(io_mux::FUN_WPU | io_mux::FUN_WPD);
-
             write_volatile(io_pin, val);
         }
     }
@@ -79,43 +78,37 @@ impl Pin<Output> {
     }
 
     fn config_output(&self) {
-        unsafe {
-            if self.pin < 32 {
-                write_volatile(gpio_mux::GPIO_ENABLE_W1TS, 1 << self.pin);
-            } else {
-                write_volatile(gpio_mux::GPIO_ENABLE1_W1TS, 1 << (self.pin - 32));
-            }
-
-            let io_pin = io_mux::io_mux_reg(self.pin);
-            let mut val = read_volatile(io_pin);
-
-            val = (val & !0b111) | io_mux::MCU_SEL_GPIO;
-
-            val &= !io_mux::FUN_IE;
-
-            val &= !(io_mux::FUN_WPU | io_mux::FUN_WPD);
-
-            write_volatile(io_pin, val);
+        if self.pin < 32 {
+            unsafe { write_volatile(gpio_mux::GPIO_ENABLE_W1TS, 1 << self.pin) };
+        } else {
+            unsafe { write_volatile(gpio_mux::GPIO_ENABLE1_W1TS, 1 << (self.pin - 32)) };
         }
+
+        let io_pin = io_mux::io_mux_reg(self.pin);
+        let mut val = unsafe { read_volatile(io_pin) };
+
+        val = (val & !0b111) | io_mux::MCU_SEL_GPIO;
+
+        val &= !io_mux::FUN_IE;
+
+        val &= !(io_mux::FUN_WPU | io_mux::FUN_WPD);
+
+        unsafe { write_volatile(io_pin, val) };
     }
 
     pub fn set_high(&self) {
-        unsafe {
-            if self.pin < 32 {
-                write_volatile(gpio_mux::GPIO_OUT_W1TS, 1 << self.pin);
-            } else {
-                write_volatile(gpio_mux::GPIO_OUT1_W1TS, 1 << (self.pin - 32));
-            }
+        if self.pin < 32 {
+            unsafe { write_volatile(gpio_mux::GPIO_OUT_W1TS, 1 << self.pin) };
+        } else {
+            unsafe { write_volatile(gpio_mux::GPIO_OUT1_W1TS, 1 << (self.pin - 32)) };
         }
     }
 
     pub fn set_low(&self) {
-        unsafe {
-            if self.pin < 32 {
-                write_volatile(gpio_mux::GPIO_OUT_W1TC, 1 << self.pin);
-            } else {
-                write_volatile(gpio_mux::GPIO_OUT1_W1TC, 1 << (self.pin - 32));
-            }
+        if self.pin < 32 {
+            unsafe { write_volatile(gpio_mux::GPIO_OUT_W1TC, 1 << self.pin) };
+        } else {
+            unsafe { write_volatile(gpio_mux::GPIO_OUT1_W1TC, 1 << (self.pin - 32)) };
         }
     }
 
@@ -131,31 +124,26 @@ impl Pin<Output> {
 
 impl<MODE> Pin<MODE> {
     pub fn set_pull(&self, pull: Pull) {
-        let io_pin = io_mux::io_mux_reg(self.pin);
-        unsafe {
-            let mut val = read_volatile(io_pin);
-            val &= !(io_mux::FUN_WPD | io_mux::FUN_WPU);
-            match pull {
-                Pull::Up => val |= io_mux::FUN_WPU,
-                Pull::Down => val |= io_mux::FUN_WPD,
-                Pull::None => {}
-            }
-            write_volatile(io_pin, val);
+        let io_pin: *mut u32 = io_mux::io_mux_reg(self.pin);
+        let mut val = unsafe { read_volatile(io_pin) };
+        val &= !(io_mux::FUN_WPD | io_mux::FUN_WPU);
+        match pull {
+            Pull::Up => val |= io_mux::FUN_WPU,
+            Pull::Down => val |= io_mux::FUN_WPD,
+            Pull::None => {}
         }
+        unsafe { write_volatile(io_pin, val) };
     }
 
     pub fn is_high(&self) -> bool {
-        unsafe {
-            if self.pin < 32 {
-                (read_volatile(gpio_mux::GPIO_IN) & (1 << self.pin)) != 0
-            } else {
-                (read_volatile(gpio_mux::GPIO_IN1) & (1 << self.pin - 32)) != 0
-            }
+        if self.pin < 32 {
+            (unsafe { read_volatile(gpio_mux::GPIO_IN) } & (1 << self.pin)) != 0
+        } else {
+            (unsafe { read_volatile(gpio_mux::GPIO_IN1) } & (1 << self.pin - 32)) != 0
         }
     }
 
-    pub fn get_pin(&self) -> u8{
+    pub fn get_pin(&self) -> u8 {
         self.pin
     }
-
 }
