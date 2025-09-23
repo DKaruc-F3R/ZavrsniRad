@@ -1,6 +1,6 @@
 # Primjena jezika Rust za razvoj ugradbenih sustava (NodeMCU-ESP32)
 
-Ovo je repozitorij s `no_std` niskorazinskim Rust bibliotekama za upravljanje periferijom na razvojnoj pločici **NodeMCU-ESP32 (Joy-IT)**.  
+Ovo je repozitorij s `no_std` "bare metal" niskorazinskim Rust bibliotekama za upravljanje periferijom na razvojnoj pločici **NodeMCU-ESP32 (Joy-IT)**.  
 Projekt sadrži vlastite module za **IO_MUX**, **GPIO**, perifernu matricu i protokole (**SPI i UART**) te praktične primjere — npr. čitanje temperature s **BMP280** senzora i upravljanje LED indikacijom.
 
 ---
