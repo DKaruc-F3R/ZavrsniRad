@@ -1,104 +1,146 @@
-Primjena programskog jezika Rust za razvoj ugradbenih sustava
+# Primjena jezika Rust za razvoj ugradbenih sustava (NodeMCU-ESP32)
 
-Omoguceni svi GPIO driveri, za Input ili Output. 
-Glavna logika se nalazi u lib.rs, dok se u main.rs nalazi demonstracija funkcionalnost.
-Unutar periph.rs nalazi se integracija gpioa korsiteći periferne module, tj. ne direktnom registar manipulacijom kao što je definirano u lib.rs.
+Ovo je repozitorij s `no_std` niskorazinskim Rust bibliotekama za upravljanje periferijom na razvojnoj pločici **NodeMCU-ESP32 (Joy-IT)**.  
+Projekt sadrži vlastite module za **IO_MUX**, **GPIO**, perifernu matricu i protokole (**SPI i UART**) te praktične primjere — npr. čitanje temperature s **BMP280** senzora i upravljanje LED indikacijom.
 
-Unutar esp32 technical reference manual (ESP TRM) nalazi se detaljan opis svih registara, te opis funkcionalnosti GPIO i IO muxa
- 
-![image](https://github.com/user-attachments/assets/22519869-ac1e-4c0a-aa27-bb42a25ad9cf)
+---
 
-![image](https://github.com/user-attachments/assets/e09e15c1-c3e5-434b-96f2-8b4db16d636d)
+## Struktura repozitorija
 
+```
+/src
+  ├─ io_mux.rs        # IO_MUX registri i funkcije
+  ├─ gpio_mux.rs      # GPIO registri
+  ├─ periph.rs        # konfiguracija perifernih signala (IN/OUT SEL)
+  ├─ lib.rs           # osnovna GPIO biblioteka (Pin<MODE>, set_pull, is_high, …)
+  ├─ main.rs          # primjeri i aplikacije (BMP280, demo)
+  └─ protocols/
+       ├─ spi.rs
+       ├─ uart.rs
 
-U datoteci lib.rs definirana je generička struktura Pin<MODE> parametrizirana marker tipovima Input i Output, koja pomoću PhantomData nosi informaciju o načinu rada pina. U new konstruktorima se pozivaju metode config_input i config_output koje u unsafe blokovima čitaju i upisuju odgovarajuće registre iz modula gpio_mux i io_mux kako bi pin konfigurirali kao ulaz ili izlaz te onemogućili ili omogućili interne pull-up/down otpornike. Nakon inicijalizacije, za izlazne pinove možete pozivati set_high() / set_low(), a za ulazne is_high() / is_low(), 
-Primjerice let mut led = Pin::<Output>::new(2); led.set_high();
-let button = Pin::<Input>::new(4); if button.is_high() { … }
+```
 
-Funkcionalnost se trenutno prikazuje samo preko UART protokola, te preko par LED diodi.
+---
 
+## Cilj projekta
 
-Izvori:
+- Istražiti primjenu **Rusta u no_std okruženju** za ugradbene sustave (ESP32).  
+- Implementirati niskorazinske **wrapper-e registara** i biblioteke za sigurno upravljanje pinovima i perifernim signalima.  
+- Pružiti praktične primjere (bit-bang i hardversko mapiranje) koji pokazuju upotrebljivost i ograničenja pristupa.  
 
-Template za setup ovog projekta je:
-https://github.com/esp-rs/esp-template
+---
 
+## Ključne značajke
 
+- `no_std` niskorazinska biblioteka za ESP32  
+- **Tip-stanja** (`Pin<Output>`, `Pin<Input>`) osigurava sigurnu konfiguraciju pinova već pri kompilaciji  
+- `io_mux.rs` — pad-config adrese i bit-maske (`MCU_SEL`, `FUN_IE`, `FUN_WPU`, `FUN_WPD` …)  
+- `periph.rs` — mapiranje IN/OUT signala, omogućavanje/isključivanje GPIO drivera  
+- Implementirani protokoli:  
+  - **SPI** (bit-bang + `SpiPeriph`)  
+  - **UART** (bit-bang + `UartPeriph`)  
+- Primjeri: čitanje BMP280 senzora (SPI) i vođenje LED dioda prema temperaturi  
 
-https://github.com/esp-rs
+---
 
-https://docs.rust-embedded.org/book/intro/index.html
+## Potrebni alati
 
-https://docs.rust-embedded.org/embedonomicon/
+Preporučeno okruženje: **Linux/WSL2 (Ubuntu)** ili **macOS**  
+(na Windowsu koristiti WSL2)
 
-https://docs.rust-embedded.org/book/design-patterns/hal/gpio.html
+- `git`, `curl`, `build-essential`, `pkg-config`, `libssl-dev`, `python3`, `pip`
+- **Rust** (`rustup` + nightly toolchain za ESP32)
+- **espup** (Xtensa GCC toolchain)
+- **cargo-generate**
+- **cargo-espflash** (flash + serijski monitor)
 
-https://www.espressif.com/sites/default/files/documentation/esp32_technical_reference_manual_en.pdf ESP32 TRM (Version 5.3)
+### Brza instalacija (Ubuntu / WSL2)
 
-https://github.com/espressif/esp-idf/blob/v5.2.5/components/soc/esp32/include/soc/gpio_reg.h
+```bash
+# 1) preduvjeti
+sudo apt update
+sudo apt install -y build-essential curl git pkg-config libssl-dev python3 python3-pip ca-certificates
 
-https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf
+# 2) rustup
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
 
-https://docs.rust-embedded.org/book/peripherals/index.html
+# 3) nightly toolchain i target
+rustup toolchain install nightly
+rustup target add xtensa-esp32-none-elf --toolchain nightly
 
-https://github.com/espressif/rust-esp32-example
+# 4) cargo alati
+cargo install cargo-generate
+cargo install espup
+cargo install cargo-espflash
 
-https://doc.rust-lang.org/std/
+# 5) Xtensa toolchain
+espup install
 
-https://google.github.io/comprehensive-rust/bare-metal.html
+# (opcionalno) pristup serijskom uređaju
+sudo usermod -aG dialout $USER
+```
 
-https://github.com/rust-embedded/embedded-hal
+---
 
-https://docs.esp-rs.org/book/introduction.html
-https://github.com/esp-rs/espup
+## Kreiranje novog projekta (esp-template)
 
-https://doc.rust-lang.org/rustc/platform-support.html
+```bash
+cargo generate --git https://github.com/esp-rs/esp-template --name moj_esp32_projekt --branch main
+cd moj_esp32_projekt
+rustup override set nightly
+```
 
-https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/uart.html
-https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/spi_master.html
-https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/ledc.html
-https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/i2c.html
+---
 
-https://github.com/espressif/esp-idf/tree/v5.4.1/components/driver](https://github.com/esp-rs/esp-template
+## Izgradnja i bljeskanje (flash)
 
-https://github.com/esp-rs
+```bash
+# build + flash (release)
+cargo espflash /dev/ttyUSB0 --release
 
-https://docs.rust-embedded.org/book/intro/index.html
+# ili s već izgrađenom binarnom datotekom
+cargo espflash --monitor /dev/ttyUSB0 target/xtensa-esp32-none-elf/release/ime_binarne_datoteke
+```
 
-https://docs.rust-embedded.org/embedonomicon/
+---
 
-https://docs.rust-embedded.org/book/design-patterns/hal/gpio.html
+## Primjer: BMP280 senzor
 
-https://www.espressif.com/sites/default/files/documentation/esp32_technical_reference_manual_en.pdf ESP32 TRM (Version 5.3)
+- Implementacija SPI komunikacije preko **SpiBitBang** (softverski SPI).  
+- Čitanje **ID registra (0xD0)**, učitavanje kalibracijskih koeficijenata i izračun temperature.  
+- Na temelju izmjerene vrijednosti pale se LED diode:  
+  - plava (hladno)  
+  - zelena (normalno)  
+  - crvena (vruće)  
 
-https://github.com/espressif/esp-idf/blob/v5.2.5/components/soc/esp32/include/soc/gpio_reg.h
+**Pin mapping (primjer):**
 
-https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf
+| Funkcija   | Pin |
+|------------|-----|
+| MOSI       | 23  |
+| MISO       | 19  |
+| SCK        | 18  |
+| CS         | 5   |
+| LED plava  | 32  |
+| LED crvena | 27  |
+| LED zelena | 26  |
 
-https://docs.rust-embedded.org/book/peripherals/index.html
+---
 
-https://github.com/espressif/rust-esp32-example
+## Napomene o dizajnu
 
-https://doc.rust-lang.org/std/
+- `lib.rs` koristi **tip-stanje** za otkrivanje grešaka konfiguracije već u fazi kompilacije.  
+- Niskorazinski pristup registrima (`read_volatile`, `write_volatile`) izoliran je u **unsafe blokove** u malim modulima (`io_mux.rs`, `gpio_mux.rs`, `periph.rs`).  
+- Bit-bang implementacije su jednostavne i dobre za prototipiranje, ali ovise o CPU-timingu i sporije su od hardverskih periferija.  
 
-https://google.github.io/comprehensive-rust/bare-metal.html
+---
 
-https://github.com/rust-embedded/embedded-hal
+## Literatura i poveznice
 
-https://docs.esp-rs.org/book/introduction.html
-https://github.com/esp-rs/espup
-
-https://doc.rust-lang.org/rustc/platform-support.html
-
-https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/uart.html
-https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/spi_master.html
-https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/ledc.html
-https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/i2c.html
-
-
-https://github.com/espressif/esp-idf/tree/v5.4.1/components/driver
-https://github.com/esp-rs/no_std-training
-
-https://www.ti.com/lit/an/slva704/slva704.pdf?ts=1749492423884&ref_url=https%253A%252F%252Fwww.google.com%252F)
-https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf
-https://cdn-reichelt.de/documents/datenblatt/A300/SBC-NODEMCU-ESP32-DATASHEET_V1.2.pdf
+- [esp-template — esp-rs](https://github.com/esp-rs/esp-template)  
+- [ESP32 Technical Reference Manual (TRM)](https://www.espressif.com/sites/default/files/documentation/esp32_technical_reference_manual_en.pdf)  
+- [ESP32 Datasheet](https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf)  
+- [Embedded Rust Book](https://docs.rust-embedded.org/book/intro/index.html)  
+- [Embedonomicon](https://docs.rust-embedded.org/embedonomicon/)  
+- [BMP280 Datasheet](https://cdn-shop.adafruit.com/datasheets/BST-BMP280-DS001-11.pdf)  
